@@ -12,7 +12,7 @@ interface CnnDetectionResultsProps {
 }
 
 export default function CnnDetectionResults({ result }: CnnDetectionResultsProps) {
-    const isSeismicEvent = result.detectionType === 'Seismic Event'
+    const isSeismicEvent = result.detectionType === 'Seismic Event' || result.detectionType === 'Earthquake'
 
     return (
         <Card className="p-6 bg-card/50 border-border/50 backdrop-blur">

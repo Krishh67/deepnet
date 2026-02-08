@@ -2,6 +2,7 @@ fastapi[standard]==0.115.6
 uvicorn[standard]==0.34.0
 python-multipart==0.0.20
 librosa>=0.10.2
+soundfile>=0.12.1
 scipy>=1.14.1
 matplotlib>=3.9.3
 numpy>=2.1.0

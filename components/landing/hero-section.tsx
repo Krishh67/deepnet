@@ -84,7 +84,7 @@ export default function HeroSection() {
           className={`inline-block mb-8 px-6 py-3 rounded-full bg-primary/15 border border-primary/40 backdrop-blur-sm transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
             }`}
         >
-          <span className="text-primary font-bold text-sm tracking-wider">NEXT-GEN OCEAN INTELLIGENCE</span>
+          <span className="text-primary font-bold text-sm tracking-wider">NEXT-GEN INTELLIGENCE</span>
         </div>
 
         {/* Main heading with dramatic styling */}
@@ -93,7 +93,7 @@ export default function HeroSection() {
             }`}
         >
           <span className="bg-gradient-to-r from-primary via-cyan-300 to-accent bg-clip-text text-transparent" style={{ backgroundSize: '200% 200%' }}>
-            AI-Powered Underwater Acoustic Event Detection
+            AI-Powered Underwater Acoustic and Seismic Event Detection
           </span>
         </h1>
 
