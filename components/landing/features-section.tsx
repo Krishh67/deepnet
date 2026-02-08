@@ -14,7 +14,7 @@ export default function FeaturesSection() {
     {
       icon: AlertCircle,
       title: 'Seismic Detection',
-      description: 'Identifies seismic-like acoustic events and assesses tsunami risk automatically.',
+      description: 'Classifies underwater acoustic events (earthquakes, marine life, explosions) and assesses risk automatically.',
       color: 'from-accent to-primary',
     },
     {

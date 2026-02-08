@@ -24,7 +24,7 @@ export default function AudioAnalysisSection() {
     setIsAnalyzing(true)
 
     try {
-      // Create FormData and append the file
+      // Create FormData and upload to backend
       const formData = new FormData()
       formData.append('file', uploadedFile)
 
@@ -41,18 +41,21 @@ export default function AudioAnalysisSection() {
 
       const data = await response.json()
 
-      // Transform backend response to frontend format
+      // Use real Gemini data for detection + static mock data for graphs
       setAnalysisResult({
+        // Real AI data from Gemini
         detectionType: data.detection_type,
         confidence: data.confidence,
         tsunamiRisk: data.tsunami_risk,
-        energyPeak: Math.round(data.rms_energy * 10000), // Scale for display
-        frequency: data.frequency,
-        duration: data.duration,
-        spectrogramBase64: data.spectrogram_base64,
+        aiDescription: data.ai_description,
+
+        // Static mock data for graphs (will be displayed by VisualizationPanel)
+        energyPeak: 2847,
+        frequency: 12.5,
+        duration: 4.2,
         analysis: {
-          description: data.description,
-          inference: data.reasoning,
+          description: data.ai_description, // Use AI description
+          inference: `AI Confidence: ${data.confidence}% | Risk: ${data.tsunami_risk}`,
         },
       })
     } catch (error) {
@@ -74,7 +77,7 @@ export default function AudioAnalysisSection() {
             </span>
           </h1>
           <p className="text-foreground/60 max-w-2xl mx-auto text-lg">
-            Upload a WAV file and let our AI listen to the ocean's secrets
+            Upload a WAV or MP3 file and let our AI classify underwater acoustic events
           </p>
         </div>
 
@@ -101,7 +104,7 @@ export default function AudioAnalysisSection() {
                 disabled={!uploadedFile || isAnalyzing}
                 className="w-full mt-6 bg-gradient-to-r from-primary to-accent hover:from-primary/80 hover:to-accent/80 text-background font-semibold disabled:opacity-50"
               >
-                {isAnalyzing ? 'Listening to Ocean... 🌊' : 'Analyze Audio'}
+                {isAnalyzing ? 'AI Analyzing... 🤖' : 'Analyze with AI'}
               </Button>
             </Card>
           </div>
@@ -113,15 +116,28 @@ export default function AudioAnalysisSection() {
                 <div className="flex justify-center mb-4">
                   <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                 </div>
-                <p className="text-xl text-foreground mb-2">Listening to the Ocean...</p>
-                <p className="text-foreground/60">Our AI is analyzing the audio file for seismic events and marine life</p>
+                <p className="text-xl text-foreground mb-2">AI is analyzing the audio...</p>
+                <p className="text-foreground/60">Gemini AI is classifying the underwater acoustic event</p>
               </Card>
             )}
 
             {analysisResult && (
               <>
-                <VisualizationPanel result={analysisResult} />
+                {/* AI Description Card - NEW */}
+                <Card className="p-6 bg-card/50 border-border/50 backdrop-blur">
+                  <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span className="text-3xl">🤖</span>
+                    AI Analysis
+                  </h3>
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                    <p className="text-foreground leading-relaxed">
+                      {analysisResult.aiDescription}
+                    </p>
+                  </div>
+                </Card>
+
                 <DetectionResults result={analysisResult} />
+                <VisualizationPanel result={analysisResult} />
                 <ExplainabilitySection result={analysisResult} />
               </>
             )}
@@ -130,7 +146,7 @@ export default function AudioAnalysisSection() {
               <Card className="p-8 bg-card/50 border-border/50 backdrop-blur text-center">
                 <div className="text-5xl mb-4 opacity-50">🎵</div>
                 <p className="text-xl text-foreground mb-2">Ready to analyze</p>
-                <p className="text-foreground/60">Upload an audio file and click "Analyze Audio" to get started</p>
+                <p className="text-foreground/60">Upload an audio file and click "Analyze with AI" to get started</p>
               </Card>
             )}
           </div>

@@ -92,12 +92,8 @@ export default function HeroSection() {
           className={`text-5xl md:text-7xl font-black mb-6 leading-tight transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'
             }`}
         >
-          <span className="bg-gradient-to-r from-primary via-cyan-300 to-primary bg-clip-text text-transparent animate-pulse" style={{ backgroundSize: '200% 200%' }}>
-            AI That Listens
-          </span>
-          <br />
-          <span className="bg-gradient-to-l from-accent via-primary to-cyan-400 bg-clip-text text-transparent text-shadow-lg">
-            to the Ocean
+          <span className="bg-gradient-to-r from-primary via-cyan-300 to-accent bg-clip-text text-transparent" style={{ backgroundSize: '200% 200%' }}>
+            AI-Powered Underwater Acoustic Event Detection
           </span>
         </h1>
 
@@ -115,7 +111,7 @@ export default function HeroSection() {
             }`}
         >
           <p className="text-lg md:text-xl text-foreground/90">
-            Our system analyzes underwater sound to detect seismic-like events and infer tsunami risk using explainable AI.
+            Our system analyzes underwater acoustic signals to detect and classify events including earthquakes, marine life, explosions, and ambient ocean sounds.
           </p>
         </div>
 

@@ -1,23 +1,13 @@
 import os
-import io
 import base64
 import tempfile
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
-import librosa
-import librosa.display
-import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
-import matplotlib.pyplot as plt
-from scipy.signal import butter, filtfilt
-import google.generativeai as genai
 from dotenv import load_dotenv
-
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import google.generativeai as genai
 
 # Load environment variables
 load_dotenv()
@@ -28,17 +18,14 @@ app = FastAPI(title="OceanGuard Audio Analysis API")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.js frontend
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Configuration
-SAMPLE_RATE = 200
-DETECTION_THRESHOLD = 0.001
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY not found in environment variables")
 
@@ -50,115 +37,7 @@ class AnalysisResult(BaseModel):
     detection_type: str
     confidence: int
     tsunami_risk: str
-    rms_energy: float
-    frequency: float
-    duration: float
-    description: str
-    reasoning: str
-    spectrogram_base64: str
-    is_event_detected: bool
-
-
-def bandpass_filter(data: np.ndarray, lowcut: float, highcut: float, fs: int, order: int = 4) -> np.ndarray:
-    """Apply bandpass filter to audio data"""
-    nyq = 0.5 * fs
-    if lowcut >= nyq:
-        lowcut = nyq - 1
-    if highcut >= nyq:
-        highcut = nyq - 0.1
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band')
-    return filtfilt(b, a, data)
-
-
-def generate_spectrogram(y: np.ndarray, sr: int) -> str:
-    """Generate spectrogram and return as base64 string"""
-    S = librosa.stft(y, n_fft=256)
-    S_db = librosa.amplitude_to_db(np.abs(S), ref=np.max)
-    
-    plt.figure(figsize=(10, 4))
-    librosa.display.specshow(S_db, sr=sr, x_axis='time', y_axis='hz')
-    plt.colorbar(format='%+2.0f dB')
-    plt.title('Audio Spectrogram')
-    plt.tight_layout()
-    
-    # Save to bytes buffer
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-    plt.close()
-    buf.seek(0)
-    
-    # Convert to base64
-    img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    return img_base64
-
-
-def analyze_with_gemini(spectrogram_base64: str, rms_energy: float, duration: float) -> dict:
-    """Use Gemini AI to classify the audio event from spectrogram"""
-    
-    # Decode base64 to bytes
-    img_bytes = base64.b64decode(spectrogram_base64)
-    
-    prompt = f"""
-Analyze this underwater acoustic spectrogram image.
-
-**Audio Metrics:**
-- RMS Energy (1-20Hz): {rms_energy:.6f}
-- Duration: {duration:.2f} seconds
-
-**Task:**
-You must respond with ONLY a valid JSON object. Do not include any markdown formatting, code blocks, or extra text.
-
-Return a JSON object with these exact fields:
-{{
-  "detection_type": "<one of: Earthquake, Marine Life, Explosion, Ambient Noise>",
-  "confidence": <integer 0-100>,
-  "tsunami_risk": "<one of: Low, Medium, High>",
-  "description": "<brief 1-2 sentence description of what you see in the spectrogram>",
-  "reasoning": "<1-2 sentences explaining your classification based on frequency patterns, energy distribution, and temporal characteristics>"
-}}
-
-Guidelines:
-- Earthquake: Low-frequency (0-20Hz), sustained energy, gradual onset
-- Marine Life: Varied frequencies, intermittent patterns, biological rhythms
-- Explosion: Sudden spike, broadband energy, short duration
-- Ambient Noise: Diffuse energy, no clear pattern, background activity
-
-Respond with ONLY the JSON object, nothing else.
-"""
-
-    try:
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        response = model.generate_content([
-            {'mime_type': 'image/png', 'data': img_bytes},
-            prompt
-        ])
-        
-        # Parse response text as JSON
-        import json
-        response_text = response.text.strip()
-        
-        # Remove markdown code blocks if present
-        if response_text.startswith('```'):
-            # Extract content between ``` markers
-            lines = response_text.split('\n')
-            response_text = '\n'.join(lines[1:-1]) if len(lines) > 2 else response_text
-            response_text = response_text.replace('```json', '').replace('```', '').strip()
-        
-        result = json.loads(response_text)
-        return result
-        
-    except Exception as e:
-        print(f"Gemini API Error: {e}")
-        # Return default values on error
-        return {
-            "detection_type": "Ambient Noise",
-            "confidence": 50,
-            "tsunami_risk": "Low",
-            "description": "Unable to classify due to API error",
-            "reasoning": f"Error occurred: {str(e)}"
-        }
+    ai_description: str
 
 
 @app.get("/")
@@ -170,14 +49,12 @@ async def root():
 @app.post("/analyze", response_model=AnalysisResult)
 async def analyze_audio(file: UploadFile = File(...)):
     """
-    Analyze uploaded audio file for underwater seismic events
-    
-    Accepts: WAV, MP3, FLAC files
-    Returns: Analysis results with detection type, confidence, and visualizations
+    Analyze uploaded audio file using Gemini AI
+    Returns: detection type, confidence, tsunami risk, and AI description
     """
     
     # Validate file type
-    allowed_extensions = ['.wav', '.mp3', '.flac', '.ogg']
+    allowed_extensions = ['.wav', '.mp3']
     file_ext = Path(file.filename).suffix.lower()
     
     if file_ext not in allowed_extensions:
@@ -193,59 +70,111 @@ async def analyze_audio(file: UploadFile = File(...)):
             tmp.write(content)
             tmp_path = tmp.name
         
-        # Load audio file
-        y, sr = librosa.load(tmp_path, sr=SAMPLE_RATE)
-        duration = librosa.get_duration(y=y, sr=sr)
-        
-        # Generate spectrogram
-        spectrogram_base64 = generate_spectrogram(y, sr)
-        
-        # Apply bandpass filter (1-20Hz for seismic events)
-        try:
-            y_filtered = bandpass_filter(y, 1.0, 20.0, sr)
-        except ValueError as e:
-            # If filtering fails, use original signal
-            y_filtered = y
-        
-        # Calculate RMS energy
-        rms_energy = float(np.sqrt(np.mean(y_filtered**2)))
-        
-        # Detect if event is present based on energy threshold
-        is_event_detected = rms_energy > DETECTION_THRESHOLD
-        
-        # Get dominant frequency
-        fft = np.fft.fft(y_filtered)
-        freqs = np.fft.fftfreq(len(fft), 1/sr)
-        magnitude = np.abs(fft)
-        # Only consider positive frequencies
-        positive_freqs = freqs[:len(freqs)//2]
-        positive_magnitude = magnitude[:len(magnitude)//2]
-        dominant_freq = float(positive_freqs[np.argmax(positive_magnitude)])
-        
-        # Use Gemini AI to classify the event
-        gemini_result = analyze_with_gemini(spectrogram_base64, rms_energy, duration)
+        # Read file as base64 for Gemini
+        with open(tmp_path, 'rb') as f:
+            audio_bytes = f.read()
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
         
         # Clean up temporary file
         os.unlink(tmp_path)
         
-        # Prepare response
-        result = AnalysisResult(
-            detection_type=gemini_result.get("detection_type", "Ambient Noise"),
-            confidence=gemini_result.get("confidence", 50),
-            tsunami_risk=gemini_result.get("tsunami_risk", "Low"),
-            rms_energy=rms_energy,
-            frequency=abs(dominant_freq),
-            duration=duration,
-            description=gemini_result.get("description", "Analysis completed"),
-            reasoning=gemini_result.get("reasoning", "Classification based on acoustic patterns"),
-            spectrogram_base64=spectrogram_base64,
-            is_event_detected=is_event_detected
-        )
-        
-        return result
+        # Prepare Gemini prompt
+        prompt = """You are an expert in underwater acoustic signal interpretation and ocean sound analysis.
+
+Analyze the provided audio (or its acoustic representation) and identify the most likely type of underwater acoustic event.
+
+Your goal is to classify WHAT kind of event is present, if any, based on acoustic patterns such as energy distribution, duration, temporal structure, and frequency behavior.
+
+IMPORTANT:
+- Do NOT assume the event is an earthquake.
+- Choose the classification that best matches the observed acoustic characteristics.
+- If no clear event is present, classify it as Ambient Noise.
+
+Respond with ONLY a valid JSON object.  
+No markdown, no code blocks, no explanations outside JSON.
+
+Return this exact structure:
+{
+  "detection_type": "<one of: Earthquake, Marine Life, Explosion, Ambient Noise>",
+  "confidence": <integer between 0-100>,
+  "tsunami_risk": "<one of: Low, Medium, High>",
+  "ai_description": "<2-3 sentences describing what acoustic patterns are present and why this classification was chosen>"
+}
+
+Classification Guidelines (use as reference, not assumptions):
+
+- Earthquake:
+  Sustained low-frequency energy, long duration, gradual onset and decay, seismic-like acoustic behavior.
+
+- Marine Life:
+  Repetitive or rhythmic patterns, clicks, whistles, calls, or frequency-modulated sounds associated with biological activity.
+
+- Explosion:
+  Very sudden onset, short duration, strong broadband energy spike, impulsive acoustic signature.
+
+- Ambient Noise:
+  Diffuse or random energy, background ocean sounds, waves, distant activity, or no clearly distinguishable event.
+
+Tsunami Risk Assessment:
+- High:
+  Only if a strong, sustained earthquake-like acoustic signature is present.
+- Medium:
+  If seismic-like features are present but weak, short, or ambiguous.
+- Low:
+  If the sound is marine life, explosion, ambient noise, or non-seismic in nature.
+
+Be conservative and scientifically responsible in assigning tsunami risk.
+
+Respond with ONLY the JSON object."""
+
+        # Call Gemini API
+        try:
+            model = genai.GenerativeModel('gemini-2.5-flash')
+            
+            # Determine MIME type
+            mime_type = 'audio/wav' if file_ext == '.wav' else 'audio/mpeg'
+            
+            response = model.generate_content([
+                {
+                    'mime_type': mime_type,
+                    'data': audio_bytes
+                },
+                prompt
+            ])
+            
+            # Parse JSON response
+            import json
+            response_text = response.text.strip()
+            
+            # Remove markdown code blocks if present
+            if response_text.startswith('```'):
+                lines = response_text.split('\n')
+                response_text = '\n'.join(lines[1:-1]) if len(lines) > 2 else response_text
+                response_text = response_text.replace('```json', '').replace('```', '').strip()
+            
+            gemini_result = json.loads(response_text)
+            
+            # Validate and prepare response
+            result = AnalysisResult(
+                detection_type=gemini_result.get("detection_type", "Ambient Noise"),
+                confidence=int(gemini_result.get("confidence", 50)),
+                tsunami_risk=gemini_result.get("tsunami_risk", "Low"),
+                ai_description=gemini_result.get("ai_description", "Analysis completed")
+            )
+            
+            return result
+            
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
+            # Return fallback response on error
+            return AnalysisResult(
+                detection_type="Ambient Noise",
+                confidence=50,
+                tsunami_risk="Low",
+                ai_description=f"Unable to classify audio due to error: {str(e)}"
+            )
         
     except Exception as e:
-        # Clean up if file exists
         if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.unlink(tmp_path)
         

@@ -67,7 +67,7 @@ export default function DetectionResults({ result }: DetectionResultsProps) {
       <div className={`p-6 rounded-lg border-2 ${getTsunamiRiskBgColor(result.tsunamiRisk)} mb-6`}>
         <div className="flex items-center gap-3 mb-3">
           <AlertTriangle size={24} className="text-foreground" />
-          <p className="text-foreground/70 font-semibold">Tsunami Risk Assessment</p>
+          <p className="text-foreground/70 font-semibold">Event Risk Assessment</p>
         </div>
         <div className={`inline-block px-4 py-2 rounded-lg font-bold text-background bg-gradient-to-r ${getTsunamiRiskColor(result.tsunamiRisk)}`}>
           {result.tsunamiRisk} Risk
@@ -93,8 +93,7 @@ export default function DetectionResults({ result }: DetectionResultsProps) {
       {/* Disclaimer */}
       <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-muted/50">
         <p className="text-foreground/60 text-sm">
-          <span className="font-semibold">⚠️ Disclaimer:</span> This system detects seismic-like acoustic events and infers tsunami risk. It does not
-          directly detect tsunamis. Always follow official alert systems and government warnings.
+          <span className="font-semibold">⚠️ Disclaimer:</span> This system classifies underwater acoustic events and assesses risk based on acoustic patterns. For earthquake/tsunami events, always follow official seismological alert systems and government warnings.
         </p>
       </div>
     </Card>

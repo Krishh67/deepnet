@@ -30,6 +30,9 @@ export default function Navigation() {
             <Link href="/analyze" className="text-foreground/80 hover:text-foreground transition">
               Analyze
             </Link>
+            <Link href="/cnn-analysis" className="text-foreground/80 hover:text-foreground transition">
+              CNN Analysis
+            </Link>
             <Link href="/#how-it-works" className="text-foreground/80 hover:text-foreground transition">
               How It Works
             </Link>
@@ -64,6 +67,9 @@ export default function Navigation() {
             </Link>
             <Link href="/analyze" className="block text-foreground/80 hover:text-foreground transition py-2">
               Analyze
+            </Link>
+            <Link href="/cnn-analysis" className="block text-foreground/80 hover:text-foreground transition py-2">
+              CNN Analysis
             </Link>
             <Link href="/#how-it-works" className="block text-foreground/80 hover:text-foreground transition py-2">
               How It Works

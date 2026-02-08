@@ -27,4 +27,4 @@ Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
 Write-Host ""
 
 # Start the server
-python -m uvicorn api:app --reload --port 8000
+python -m uvicorn api1:app --reload --port 8000
