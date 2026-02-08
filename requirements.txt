@@ -12,3 +12,4 @@ torch
 tensorflow
 tensorflow-hub
 pandas
+standard-aifc>=2024.1.1  # Required for librosa on Python 3.13+
