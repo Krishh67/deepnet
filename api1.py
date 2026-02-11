@@ -346,10 +346,11 @@ You are an expert underwater acoustic analyst. Analyze this audio event using th
 - Duration: {duration:.2f} seconds
 
 **Classification Categories:**
-1. **Earthquake** - Gradual onset, long duration (>10s), sustained low-frequency energy (1-20 Hz), RMS typically >0.6
-2. **Explosion** - Sudden onset, short duration (<5s), broadband spike, high RMS peak
-3. **Marine Life** - Biological patterns (clicks, whistles, calls), irregular patterns, moderate duration
-4. **Ambient Noise** - Low RMS (<0.4), no clear structure, random fluctuations
+1. **Earthquake** - 
+2. **Explosion** -
+3. **Marine Life** - 
+4. **Ambient Noise** - 
+use your brain based on the data and classify it
 
 **Analysis Instructions:**
 - Examine the spectrogram for frequency patterns and energy distribution
